@@ -1,12 +1,12 @@
 
 aws_eks_cluster_config = {
 
-      "demo-cluster" = {
+      "eks_cluster" = {
 
-        eks_cluster_name         = "demo-cluster1"
-        eks_subnet_ids = ["subnet-0c6265a3df91b7b61","subnet-0f9c4ff10c3526a4d","subnet-04919de8d00a175f3","subnet-080af72a4f9415d55"]
+        eks_cluster_name         = "eks_cluster"
+        eks_subnet_ids = ["subnet-06f6429ef74be23d6","subnet-03109b40a02681959","subnet-0317f286839e0f522"]
         tags = {
-             "Name" =  "demo-cluster"
+             "Name" =  "eks_cluster"
          }  
       }
 }
@@ -15,10 +15,10 @@ eks_node_group_config = {
 
   "node1" = {
 
-        eks_cluster_name         = "demo-cluster"
+        eks_cluster_name         = "eks_cluster"
         node_group_name          = "mynode"
-        nodes_iam_role           = "eks-node-group-general1"
-        node_subnet_ids          = [subnet-0c6265a3df91b7b61","subnet-0f9c4ff10c3526a4d","subnet-04919de8d00a175f3","subnet-080af72a4f9415d55"]
+        nodes_iam_role           = "Node_instance"
+        node_subnet_ids          = ["subnet-06f6429ef74be23d6","subnet-03109b40a02681959","subnet-0317f286839e0f522"]
 
         tags = {
              "Name" =  "node1"
