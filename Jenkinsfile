@@ -10,6 +10,10 @@ pipeline{
         string(name: 'ImageName', description: "name of the docker build", defaultValue: 'javapp')
         string(name: 'ImageTag', description: "tag of the docker build", defaultValue: 'v1')
         string(name: 'DockerHubUser', description: "name of the Application", defaultValue: 'patilvai')
+        string(name: 'aws_account_id', description: " AWS Account ID", defaultValue: '730335534667')
+        string(name: 'Region', description: "Region of ECR", defaultValue: 'us-east-1')
+        string(name: 'ECR_REPO_NAME', description: "name of the ECR", defaultValue: 'javasession2')
+        string(name: 'cluster', description: "name of the EKS Cluster", defaultValue: 'eks_cluster')
     }
 
     stages{
@@ -88,5 +92,61 @@ pipeline{
                }
             }
         }      
+    }
+}
+stage('Create EKS Cluster : Terraform'){
+            when { expression {  params.action == 'create' } }
+            steps{
+                script{
+
+                    dir('eks_module') {
+                      sh """
+                          
+                          terraform init 
+                          terraform plan -var 'access_key=$ACCESS_KEY' -var 'secret_key=$SECRET_KEY' -var 'region=${params.Region}' --var-file=./config/terraform.tfvars
+                          terraform apply -var 'access_key=$ACCESS_KEY' -var 'secret_key=$SECRET_KEY' -var 'region=${params.Region}' --var-file=./config/terraform.tfvars --auto-approve
+                      """
+                  }
+                }
+            }
+        }
+        stage('Connect to EKS '){
+            when { expression {  params.action == 'create' } }
+        steps{
+
+            script{
+
+                sh """
+                aws configure set aws_access_key_id "$ACCESS_KEY"
+                aws configure set aws_secret_access_key "$SECRET_KEY"
+                aws configure set region "${params.Region}"
+                aws eks --region ${params.Region} update-kubeconfig --name ${params.cluster}
+                """
+            }
+        }
+        } 
+        stage('Deployment on EKS Cluster'){
+            when { expression {  params.action == 'create' } }
+            steps{
+                script{
+                  
+                  def apply = false
+
+                  try{
+                    input message: 'please confirm to deploy on eks', ok: 'Ready to apply the config ?'
+                    apply = true
+                  }catch(err){
+                    apply= false
+                    currentBuild.result  = 'UNSTABLE'
+                  }
+                  if(apply){
+
+                    sh """
+                      kubectl apply -f .
+                    """
+                  }
+                }
+            }
+        }    
     }
 }
