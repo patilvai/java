@@ -68,11 +68,10 @@ pipeline{
          stage('Docker Image Scan: trivy '){
          when { expression {  params.action == 'create' } }
             steps{
-               script{
-                   sh '''
-                   export GITHUB_TOKEN=${GITHUB_TOKEN}
-                   
+                retry(3){
+                   script{
                    dockerImageScan("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
+                 }
                }
             }
         }
