@@ -12,6 +12,7 @@ pipeline {
         string(name: 'aws_account_id', description: "Your AWS account ID", defaultValue: '730335534667') // New parameter for AWS account
         string(name: 'ECR_REPO_NAME', description: "ECR repository name", defaultValue: 'javasession2') // New parameter for ECR repo
         string(name: 'Region', description: "AWS region", defaultValue: 'us-east-1') // New parameter for AWS region
+        string(name: 'cluster', description: "EKS Cluster Name", defaultValue: 'eks_cluster')
     }
 
     stages {
