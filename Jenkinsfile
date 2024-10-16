@@ -74,7 +74,7 @@ pipeline {
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
                         sh """
-                        $(aws ecr get-login --no-include-email --region ${params.Region})
+                        \$(aws ecr get-login --no-include-email --region ${params.Region})
                         docker push ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}
                         """
                     }
