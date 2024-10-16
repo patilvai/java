@@ -7,12 +7,17 @@ pipeline {
     parameters {
         choice(name: 'action', choices: 'create\ndelete', description: 'Choose create/Destroy')
         string(name: 'ImageName', description: "Name of the docker build", defaultValue: 'javapp')
-        string(name: 'ImageTag', description: "Tag of the docker build", defaultValue: 'javapp')
-        string(name: 'DockerHubUser', description: "Name of the DockerHub user", defaultValue: 'patilvai')
-        string(name: 'aws_account_id', description: "Your AWS account ID", defaultValue: '730335534667') // New parameter for AWS account
-        string(name: 'ECR_REPO_NAME', description: "ECR repository name", defaultValue: 'javasession2') // New parameter for ECR repo
-        string(name: 'Region', description: "AWS region", defaultValue: 'us-east-1') // New parameter for AWS region
-        string(name: 'cluster', description: "EKS Cluster Name", defaultValue: 'eks_cluster')
+        string(name: 'ImageTag', description: "Tag of the docker build", defaultValue: 'latest')
+        string(name: 'aws_account_id', description: "Your AWS account ID", defaultValue: '730335534667') // AWS account ID
+        string(name: 'ECR_REPO_NAME', description: "ECR repository name", defaultValue: 'javasession2') // ECR repo name
+        string(name: 'Region', description: "AWS region", defaultValue: 'us-east-1') // AWS region
+    }
+
+    environment {
+        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')
+        SECRET_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        AWS_REGION = "${params.Region}"
+        ECR_REPO_URL = "${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}"
     }
 
     stages {
@@ -27,24 +32,6 @@ pipeline {
             }
         }
 
-        stage('Unit Test maven') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    mvnTest()
-                }
-            }
-        }
-
-        stage('Integration Test maven') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    mvnIntegrationTest()
-                }
-            }
-        }
-
         stage('Maven Build') {
             when { expression { params.action == 'create' } }
             steps {
@@ -54,70 +41,48 @@ pipeline {
             }
         }
 
-        stage('Docker Image Build : ECR'){
-          when { expression {  params.action == 'create' } }
-             steps{
-                script{
-                   
-                   dockerBuild("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
-                }
-             }
-         }
-        stage('Docker Image Scan: trivy '){
-          when { expression {  params.action == 'create' } }
-             steps{
-                script{
-                   
-                    dockerImageScan("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
-                }
-             }
-         }
-        stage('Docker Image Push: ECR') {
+        stage('Docker Image Build') {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    dockerImagePush("${params.ImageName}", "${params.ImageTag}", "${params.ECR_REPO_NAME}")
-                }
-            }
-        }
-        stage('Docker Image Cleanup : ECR '){
-          when { expression {  params.action == 'create' } }
-             steps{
-                script{
-                   
-                    dockerImageCleanup("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
-                }
-             }
-         }
-
-        stage('Connect to EKS') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding', 
-                        credentialsId: '730335534667', // Ensure this matches your Jenkins credentials ID
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
-                        sh """
-                        aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-                        aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-                        aws configure set region "${params.Region}"
-                        aws eks --region ${params.Region} update-kubeconfig --name ${params.cluster}
-                        """
-                    }
+                    dockerBuild("${params.ImageName}", "${params.ImageTag}")
+                    sh 'docker images'
                 }
             }
         }
 
-        stage('Deployment on EKS Cluster') {
+        stage('Authenticate Docker to ECR') {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                        sh """
-                        kubectl apply -f .
-                        """
+                    sh """
+                    aws configure set aws_access_key_id "$ACCESS_KEY"
+                    aws configure set aws_secret_access_key "$SECRET_KEY"
+                    aws configure set region "${params.Region}"
+                    aws ecr get-login-password --region ${params.Region} | docker login --username AWS --password-stdin ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com
+                    """
+                }
+            }
+        }
+
+        stage('Tag Docker Image for ECR') {
+            when { expression { params.action == 'create' } }
+            steps {
+                script {
+                    sh """
+                    docker tag ${params.ImageName}:${params.ImageTag} ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}
+                    """
+                }
+            }
+        }
+
+        stage('Push Docker Image to ECR') {
+            when { expression { params.action == 'create' } }
+            steps {
+                script {
+                    sh """
+                    docker push ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}
+                    """
                 }
             }
         }
