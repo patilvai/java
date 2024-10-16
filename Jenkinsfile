@@ -58,6 +58,7 @@ pipeline {
             steps {
                 script {
                     dockerBuild("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
+                    sh 'docker images'
                 }
             }
         }
