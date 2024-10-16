@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: myjavaapp
-        image: 730335534667.dkr.ecr.us-east-1.amazonaws.com/javasession2:latest
+        image: docker.io/patilvai/javapp
         ports:
         - containerPort: 8080
 
