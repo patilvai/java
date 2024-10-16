@@ -74,7 +74,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    docker push 730335534667.dkr.ecr.us-east-1.amazonaws.com/javasession2:latest
+                   aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 730335534667.dkr.ecr.us-east-1.amazonaws.com | docker push 730335534667.dkr.ecr.us-east-1.amazonaws.com/javasession2:latest
                 }
             }
         }
