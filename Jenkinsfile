@@ -78,6 +78,7 @@ pipeline {
                     sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 730335534667.dkr.ecr.us-east-1.amazonaws.com'
                     sh 'docker tag javasession2:latest 730335534667.dkr.ecr.us-east-1.amazonaws.com/javasession2:latest'
                     sh 'docker push 730335534667.dkr.ecr.us-east-1.amazonaws.com/javasession2:latest'     }
+                }
             }
         }
     }
