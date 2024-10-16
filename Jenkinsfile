@@ -57,7 +57,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    dockerBuild("${params.ImageName}", "${params.ImageTag}","${params.ECR_REPO_NAME}")
+                    dockerBuild("${params.ImageName}", "${params.ImageTag}","${params.DockerHubUser}")
                     sh 'docker images'
                 }
             }
@@ -67,7 +67,7 @@ pipeline {
             steps{
                script{
                    
-                   dockerImagePush("${params.ImageName}","${params.ImageTag}","${params.ECR_REPO_NAME}")
+                   dockerImagePush("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
                }
             }
         }   
@@ -76,7 +76,7 @@ pipeline {
             steps{
                script{
                    
-                   dockerImageCleanup("${params.ImageName}","${params.ImageTag}","${params.ECR_REPO_NAME}")
+                   dockerImageCleanup("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
                }
             }
         }
