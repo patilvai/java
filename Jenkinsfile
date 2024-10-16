@@ -87,7 +87,7 @@ pipeline {
                 script {
                     withCredentials([[
                         $class: 'AmazonWebServicesCredentialsBinding', 
-                        credentialsId: 'aws-credentials', // Ensure this matches your Jenkins credentials ID
+                        credentialsId: '730335534667', // Ensure this matches your Jenkins credentials ID
                         accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
                         secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                     ]]) {
