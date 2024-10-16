@@ -67,19 +67,20 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    dockerImagePush("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
+                    dockerImagePush("${params.ImageName}", "${params.ImageTag}", "${params.ECR_REPO_NAME}")
                 }
             }
         }
 
-        stage('Docker Image Cleanup: DockerHub') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    dockerImageCleanup("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
+        stage('Docker Image Push : ECR '){
+          when { expression {  params.action == 'create' } }
+             steps{
+                script{
+                   
+                    dockerImagePush("${params.aws_account_id}","${params.Region}","${params.ECR_REPO_NAME}")
                 }
-            }
-        }
+             }
+         }
 
         stage('Connect to EKS') {
             when { expression { params.action == 'create' } }
