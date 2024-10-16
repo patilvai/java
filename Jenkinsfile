@@ -9,10 +9,6 @@ pipeline {
         string(name: 'ImageName', description: "Name of the docker build", defaultValue: 'javapp')
         string(name: 'ImageTag', description: "Tag of the docker build", defaultValue: 'v1')
         string(name: 'DockerHubUser', description: "Name of the DockerHub user", defaultValue: 'patilvai')
-        string(name: 'aws_account_id', description: "AWS Account ID", defaultValue: '730335534667')
-        string(name: 'Region', description: "Region of ECR", defaultValue: 'us-east-1')
-        string(name: 'ECR_REPO_NAME', description: "Name of the ECR repository", defaultValue: 'javasession2')
-        string(name: 'cluster', description: "Name of the EKS Cluster", defaultValue: 'eks_cluster')
     }
 
     stages {
@@ -88,45 +84,6 @@ pipeline {
             steps {
                 script {
                     dockerImageCleanup("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
-                }
-            }
-        }
-
-        stage('Connect to EKS') {
-            when { expression { params.action == 'create' } }
-            steps {
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: 'aws_account']]) {
-                    script {
-                        sh """
-                        aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-                        aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-                        aws configure set region "${params.Region}"
-                        aws eks --region ${params.Region} update-kubeconfig --name ${params.cluster}
-                        """
-                    }
-                }
-            }
-        }
-
-        stage('Deployment on EKS Cluster') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    def apply = false
-
-                    try {
-                        input message: 'Please confirm to deploy on EKS', ok: 'Ready to apply the config?'
-                        apply = true
-                    } catch (err) {
-                        apply = false
-                        currentBuild.result = 'UNSTABLE'
-                    }
-
-                    if (apply) {
-                        sh """
-                        kubectl apply -f .
-                        """
-                    }
                 }
             }
         }
