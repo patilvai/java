@@ -13,11 +13,7 @@ pipeline {
         string(name: 'ECR_REPO_NAME', description: "ECR repository name", defaultValue: 'javasession2') // New parameter for ECR repo
         string(name: 'Region', description: "AWS region", defaultValue: 'us-east-1') // New parameter for AWS region
     }
-environment{
 
-        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')
-        SECRET_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-    }
     stages {
 
         stage('Git Checkout') {
@@ -66,61 +62,67 @@ environment{
                 }
             }
         }
-    stage('Docker Image Push : DockerHub '){
-         when { expression {  params.action == 'create' } }
-            steps{
-               script{
-                   
-                   dockerImagePush("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
-               }
-            }
-        }   
-        stage('Docker Image Cleanup : DockerHub '){
-         when { expression {  params.action == 'create' } }
-            steps{
-               script{
-                   
-                   dockerImageCleanup("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
-               }
-            }
-        }
-        stage('Connect to EKS '){
-            when { expression {  params.action == 'create' } }
-        steps{
 
-            script{
-
-                sh """
-                aws configure set aws_access_key_id "$ACCESS_KEY"
-                aws configure set aws_secret_access_key "$SECRET_KEY"
-                aws configure set region "${params.Region}"
-                aws eks --region ${params.Region} update-kubeconfig --name ${params.cluster}
-                """
-            }
-        }
-        } 
-        stage('Deployment on EKS Cluster'){
-            when { expression {  params.action == 'create' } }
-            steps{
-                script{
-                  
-                  def apply = false
-
-                  try{
-                    input message: 'please confirm to deploy on eks', ok: 'Ready to apply the config ?'
-                    apply = true
-                  }catch(err){
-                    apply= false
-                    currentBuild.result  = 'UNSTABLE'
-                  }
-                  if(apply){
-
-                    sh """
-                      kubectl apply -f .
-                    """
-                  }
+        stage('Docker Image Push: DockerHub') {
+            when { expression { params.action == 'create' } }
+            steps {
+                script {
+                    dockerImagePush("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
                 }
             }
-        } 
-     }
-  }
+        }
+
+        stage('Docker Image Cleanup: DockerHub') {
+            when { expression { params.action == 'create' } }
+            steps {
+                script {
+                    dockerImageCleanup("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
+                }
+            }
+        }
+
+        stage('Connect to EKS') {
+            when { expression { params.action == 'create' } }
+            steps {
+                script {
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding', 
+                        credentialsId: 'aws-credentials', // Ensure this matches your Jenkins credentials ID
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ]]) {
+                        sh """
+                        aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
+                        aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
+                        aws configure set region "${params.Region}"
+                        aws eks --region ${params.Region} update-kubeconfig --name ${params.cluster}
+                        """
+                    }
+                }
+            }
+        }
+
+        stage('Deployment on EKS Cluster') {
+            when { expression { params.action == 'create' } }
+            steps {
+                script {
+                    def apply = false
+
+                    try {
+                        input message: 'please confirm to deploy on EKS', ok: 'Ready to apply the config?'
+                        apply = true
+                    } catch (err) {
+                        apply = false
+                        currentBuild.result = 'UNSTABLE'
+                    }
+
+                    if (apply) {
+                        sh """
+                        kubectl apply -f .
+                        """
+                    }
+                }
+            }
+        }
+    }
+}
