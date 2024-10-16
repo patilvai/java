@@ -57,7 +57,7 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                    dockerBuild("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
+                    dockerBuild("${params.ImageName}", "${params.ImageTag}")
                     sh 'docker images'
                 }
             }
@@ -68,7 +68,7 @@ pipeline {
             steps {
                 retry(3) {
                     script {
-                        dockerImageScan("${params.ImageName}", "${params.ImageTag}", "${params.DockerHubUser}")
+                        dockerImageScan("${params.ImageName}", "${params.ImageTag}")
                     }
                 }
             }
