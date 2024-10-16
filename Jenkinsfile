@@ -62,32 +62,5 @@ pipeline {
                 }
             }
         }
-
-        stage('Docker Image Scan: trivy') {
-            when { expression { params.action == 'create' } }
-            steps {
-                retry(3) {
-                    script {
-                        dockerImageScan("${params.ImageName}", "${params.ImageTag}","${params.ECR_REPO_NAME}")
-                    }
-                }
-            }
-        }
-
-        stage('Docker Image Push: DockerHub') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    withAWS(credentials: "${params.aws_account_id}", region: "${params.Region}") {
-                        // Use double quotes to allow variable substitution
-                        sh "aws ecr get-login-password --region ${params.Region} | docker login --username AWS --password-stdin ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com"
-                        // Tag the image properly
-                        sh "docker tag ${params.ImageName}:${params.ImageTag} ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}"
-                        // Push the image
-                        sh "docker push ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}"
-                    }
-                }
-            }
-        }
     }
 }
