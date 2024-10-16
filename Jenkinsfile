@@ -92,9 +92,7 @@ pipeline{
                    dockerImageCleanup("${params.ImageName}","${params.ImageTag}","${params.DockerHubUser}")
                }
             }
-        }      
-    }
-}
+        }
         stage('Connect to EKS '){
             when { expression {  params.action == 'create' } }
         steps{
@@ -133,3 +131,5 @@ pipeline{
                 }
             }
         } 
+     }
+  }
