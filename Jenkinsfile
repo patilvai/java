@@ -54,14 +54,17 @@ pipeline {
             }
         }
 
-        stage('Docker Image Build : ECR') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    dockerBuild("${params.aws_account_id}", "${params.Region}", "${params.ECR_REPO_NAME}")
-                }
-            }
+        stage('Docker Image Build') {
+    when { expression { params.action == 'create' } }
+    steps {
+        script {
+            sh """
+            docker build -t ${params.ECR_REPO_NAME}:${params.ImageTag} .
+            docker tag ${params.ECR_REPO_NAME}:${params.ImageTag} ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}
+            """
         }
+    }
+}
 
         stage('Docker Image Push: ECR') {
     when { expression { params.action == 'create' } }
@@ -69,7 +72,7 @@ pipeline {
         script {
             withCredentials([[
                 $class: 'AmazonWebServicesCredentialsBinding', 
-                credentialsId: '730335534667',
+                credentialsId: '730335534667', 
                 accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
                 secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
             ]]) {
@@ -81,7 +84,6 @@ pipeline {
         }
     }
 }
-
 
         stage('Connect to EKS') {
             when { expression { params.action == 'create' } }
