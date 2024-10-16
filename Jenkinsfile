@@ -64,24 +64,24 @@ pipeline {
         }
 
         stage('Docker Image Push: ECR') {
-            when { expression { params.action == 'create' } }
-            steps {
-                script {
-                    withCredentials([[
-                        $class: 'AmazonWebServicesCredentialsBinding', 
-                        credentialsId: '730335534667',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ]]) {
-                        sh """
-                        sh """
+    when { expression { params.action == 'create' } }
+    steps {
+        script {
+            withCredentials([[
+                $class: 'AmazonWebServicesCredentialsBinding', 
+                credentialsId: '730335534667',
+                accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+                secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+            ]]) {
+                sh """
                 aws ecr get-login-password --region ${params.Region} | docker login --username AWS --password-stdin ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com
                 docker push ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}
-                        """
-                    }
-                }
+                """
             }
         }
+    }
+}
+
 
         stage('Connect to EKS') {
             when { expression { params.action == 'create' } }
