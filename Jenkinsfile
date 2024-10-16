@@ -13,7 +13,11 @@ pipeline {
         string(name: 'ECR_REPO_NAME', description: "ECR repository name", defaultValue: 'javasession2') // New parameter for ECR repo
         string(name: 'Region', description: "AWS region", defaultValue: 'us-east-1') // New parameter for AWS region
     }
+environment{
 
+        ACCESS_KEY = credentials('AWS_ACCESS_KEY_ID')
+        SECRET_KEY = credentials('AWS_SECRET_KEY_ID')
+    }
     stages {
 
         stage('Git Checkout') {
