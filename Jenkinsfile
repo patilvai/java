@@ -9,6 +9,9 @@ pipeline {
         string(name: 'ImageName', description: "Name of the docker build", defaultValue: 'javapp')
         string(name: 'ImageTag', description: "Tag of the docker build", defaultValue: 'v1')
         string(name: 'DockerHubUser', description: "Name of the DockerHub user", defaultValue: 'patilvai')
+        string(name: 'aws_account_id', description: "Your AWS account ID", defaultValue: '730335534667') // New parameter for AWS account
+        string(name: 'ECR_REPO_NAME', description: "ECR repository name", defaultValue: 'javasession2') // New parameter for ECR repo
+        string(name: 'Region', description: "AWS region", defaultValue: 'us-east-1') // New parameter for AWS region
     }
 
     stages {
@@ -74,10 +77,14 @@ pipeline {
             when { expression { params.action == 'create' } }
             steps {
                 script {
-                   withAWS(credentials: '730335534667', region: 'us-east-1') {
-                    sh 'aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 730335534667.dkr.ecr.us-east-1.amazonaws.com'
-                    sh 'docker tag ${params.ImageName}:${params.ImageTag} ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}'
-                    sh 'docker push 730335534667.dkr.ecr.us-east-1.amazonaws.com/javasession2:latest'     }
+                    withAWS(credentials: "${params.aws_account_id}", region: "${params.Region}") {
+                        // Use double quotes to allow variable substitution
+                        sh "aws ecr get-login-password --region ${params.Region} | docker login --username AWS --password-stdin ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com"
+                        // Tag the image properly
+                        sh "docker tag ${params.ImageName}:${params.ImageTag} ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}"
+                        // Push the image
+                        sh "docker push ${params.aws_account_id}.dkr.ecr.${params.Region}.amazonaws.com/${params.ECR_REPO_NAME}:${params.ImageTag}"
+                    }
                 }
             }
         }
